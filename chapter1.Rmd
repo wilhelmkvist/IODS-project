@@ -1,13 +1,15 @@
 
 # About the project
 
-*Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.*
+I'm began my PhD studies at University of Helsinki this Autumn and I'm expecting to be using R as part of my research project in musicology, employing a digital humanities approach. I've previously been taking courses on statistics (including analysis in R) via the open universities at University of Helsinki and the Hanken School of Economics. I recently got a new computer (and unfortunately lost most of my scripts from earlier courses), so I'm taking a fresh start on using R again now.  
+  
+Hitherto, I've most often processed my numbers using spreadsheets such as Excel and Google Sheets, and I've developed techniques to do my calculations quickly in these programs. The downside to this is that I've most often felt that the threshold has been lower to use a spreadsheet than using R when processing numbers (and the quickest calculator is still the Spotlight in Mac Os X). So during this course, I hope to be able to learn some useful techniques for  making sense of data quickly. Perhaps R Studio might become my program of choice some day. :)
 
+The address to my Github repository is http://github.com/wilhelmkvist/IODS-project.
 ```{r}
 # This is a so-called "R chunk" where you can write R code.
 
 date()
 
 ```
-The text continues here.
 
