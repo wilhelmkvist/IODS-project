@@ -27,14 +27,14 @@ learning2014$surf <- rowMeans(surface_columns)
 
 # create column 'attitude' by scaling the column "Attitude"
 learning2014$attitude <- learning2014$Attitude / 10
-# create column 'points' by scaling the column "Points"
-learning2014$points <- learning2014$Points / 10
 
 #Exclude observations where the exam points variable is zero. 
 learning2014 <- filter(learning2014, points > 0)
 
 #renaming 'Age' to 'age'
 colnames(learning2014)[57] <- "age"
+#renaming 'Points' to 'points'
+colnames(learning2014)[59] <- "points"
 
 #keeping only select columns
 keep_columns <- c("gender","age","attitude", "deep", "stra", "surf", "points")
