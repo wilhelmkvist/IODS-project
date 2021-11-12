@@ -29,7 +29,7 @@ learning2014$surf <- rowMeans(surface_columns)
 learning2014$attitude <- learning2014$Attitude / 10
 
 #Exclude observations where the exam points variable is zero. 
-learning2014 <- filter(learning2014, points > 0)
+learning2014 <- filter(learning2014, Points > 0)
 
 #renaming 'Age' to 'age'
 colnames(learning2014)[57] <- "age"
@@ -53,4 +53,5 @@ import_data <- read.csv("./data/learning2014.csv", stringsAsFactors = T)
 #Confirm  that the structure of the data is correct
 str(import_data)
 head(import_data)
+
 

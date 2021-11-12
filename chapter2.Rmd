@@ -1,4 +1,4 @@
-# Insert chapter 2 title here
+# RStudio Exercise 2
 
 *Describe the work you have done this week and summarize your learning.*
 
@@ -6,8 +6,78 @@
 - Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
 - Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
 
+
 ```{r}
 date()
 ```
+1. The dataset - an overview
 
-Here we go again...
+The dataset 'Learning 2014' contains data from a survey among students in the social sciences at University of Helsinki during an introductory course in statistics in late 2014 and early 2015. Participation was voluntary, but students were strongly encouraged to take part and reimbursed with extra points in the final exam. Respondents (N=183) were presented with a set of questions designed to reflect their attitudes towards statistics and university studies. Learning approaches were measured with questions designed to reflect attitudes on a deep, strategic and surface level. Points refers to the total amount of points in the final exam. Background information was provided with respect to respondents' age and gender (F/M). The present dataset (a subset of a larger dataset) contains 166 observations (by all those who participated in the final exam) of 7 variables.
+```{r}
+setwd("~/Documents/IODS-project")
+learning2014 <- 
+read.table("data/learning2014.csv", header = TRUE, sep = ",", stringsAsFactors = TRUE)
+str(learning2014)
+```
+Below is a summary of the characteristics of the different variables. The course was clearly dominated by females - about two of three students were females. Equally noteworthy is the age span (mean 25.5 years, median 22 years, range 17-55 years).
+```{r}
+summary(learning2014)
+```
+2. Exploring the dataset graphically
+
+The chart below outlines attitude, learning approaches and final exam score (points) by gender.
+Males generally scored higher on attitude and deep learning approach, while females scored higher on strategic and surface learning approaches. The gender divide in the final exam was about equal, with only a few males outperforming females in the range with the very highest scores. Although males were generally slightly older, age and final score were not positively but negatively correlated for males (-0.24), for females the correlation was insignificant (-0.02).
+The strongest correlation was identified between attitude and final score (0.44), about equal between males and females. There was a slight correlation between attitude and deep learning approaches (0.11), even more so among males (0.17). However, there was no correlation between deep learning approaches and final scores (-0.01). Apart from attitude, demonstrating a strategic learning approach was positively correlated with points (0.15), while the demonstration of a surface learning approach was negatively correlated with final scores (-0.14).
+```{r}
+library(ggplot2)
+library(GGally)
+ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+```
+
+3. Fitting a regression model
+
+Based on the correlation between variables (analyzed above), I choose to fit a regression model in order to understand the impact of age, attitude and learning approach on exam points. As it turns out, the student's attitude is highly significant (p < 0.001), while age and a strategic learning approach are moderately significant (p = 0.0981 and 0.0621 respectively).
+
+For the sake of comparison, I choose to make a second model. Excluding the modestly significant variables 'age' and 'stra' does not really seem to make any big difference (I have not conducted a hypothesis test between the models, but the intercept and attitude remain highly significant in both models.)
+```{r}
+model1 <- lm(points ~ age + attitude + stra, data = learning2014)
+summary(model1)
+model2 <- lm(points ~ attitude, data = learning2014)
+summary(model2)
+```
+4. Predicting exam scores
+
+I choose to go forth with the first model. According to the model, exam scores can be predicted if we know the person's age, attitude and scores on strategic learning approaches. As stated earlier, age is slightly negatively correlated with exam score, while attitude is strongly positively correlated with exam score. A strategic learning approach is moderately correlated with exam scores. Let us make two example calculations, one for a moderately motivated young undergraduate ("Mike"), another for a highly motivated late bloomer ("Ritva").
+
+Mike, age 22, scores on attitude and strategic learning 2 out of 5.
+Ritva, age 55, cores on attitude and strategic learning 5 out of 5.
+
+Let us predict their exam scores:
+```{r}
+students <- c('Mike','Ritva')
+age <- c(22, 55)
+attitude <- c(2,5)
+stra <- c(2,5)
+new_data <- data.frame(students, age, attitude, stra)
+predict(model1, newdata = new_data)
+```
+Effectively, R here makes the following calculations using the coefficients:
+```{r}
+model1$coefficients
+#which makes the following results:
+#Mike
+10.89543+(-0.08822*22)+(3.48077*2)+(1.00371*2)
+#Ritva
+10.89543+(-0.08822*55)+(3.48077*5)+(1.00371*5)
+#NB! Differences are due to rounding errors.
+```
+
+Using the The multiple R square value (0.2182), we see that the model makes a fairly good fit, explaining about 22 per cent of the variance.
+
+5. Graphical model validation
+
+In the following, I will produce three diagnostic plots in order to graphically explore the validity of my model assumptions. By analyzing residuals vs fitted values, I explore the validity of my model. Using the QQ-plot I explore whether errors are normally distributed. By exploring residuals vs leverage I want to find out whether there are any outliers. In this case, errors seem to be normally distributed, not correlated, and having a constant variance of Sigma^2. No severe outliers are identified.
+```{r}
+par(mfrow = c(2,2))
+plot(model1, which = c(1,2,5))
+```
