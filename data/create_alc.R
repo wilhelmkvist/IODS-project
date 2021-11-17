@@ -1,7 +1,7 @@
 # IODS course, exercise 3
 # Wilhelm Kvist 15 Nov 2021
 # This is a wrangling script to join together the two csv files included in the Student Performance Data Set, available at: https://archive.ics.uci.edu/ml/datasets/Student+Performance
-# The joining solution used here is almost entirely adapted from Reijo Sund's wrangling script provided with the course materials.
+# The joining solution used here is partly indebted to the wrangling solutions proposed by Reijo Sund in the script provided with the course materials.
 
 # Read the data into memory
 studentmat <- read.table("data/student-mat.csv", sep=";", header=TRUE)
