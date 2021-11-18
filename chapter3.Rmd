@@ -1,8 +1,3 @@
----
-output: html_document
-editor_options: 
-  chunk_output_type: console
----
 # RStudio Exercise 3
 
 *Describe the work you have done this week and summarize your learning.*
@@ -13,124 +8,127 @@ editor_options:
 ```{r}
 date()
 ```
+### 1. Exploring alcohol consumption among Portuguese secondary school students - an overview of the Alc dataset
 
-### 1. Alcohol consumption among Portuguese secondary school students - an overview of the dataset
+The Alc dataset provides data on alcohol consumption among Portuguese secondary school students aged 15 to 22 (mean 16.6 years). The data was collected using school reports and questionnaires. Attributes include student grades, demographic, social and school related features. The Alc dataset was constructed by joining two separate sets on student performance in two distinct subjects: Mathematics and Portuguese. As some students were known to have appeared in both sets, duplicates were identified and removed. 
 
-Print out the names of the variables in the data and describe the data set briefly, assuming the reader has no previous knowledge of it
-
-The Alc dataset is a combined dataset joined from two separate datasets.
-- contains data collected in two questionnaires among Portuguese students, collected in conjunction with lectures in Maths and Portuguese. Contains partly answers by the same students
-- duplicates have been identified using all but six of thevariables
-- datasets contained xx and xx observations, the joint dataset consists of 370 observations of 33 variables. Alc_use contains an average number of daily alcohol doses. (CHECK). Highuse is a binary variable indicating whether the student drinks more than 2 doses on average.
-- More information on the dataset can be found here: https://archive.ics.uci.edu/ml/datasets/Student+Performance
+The Alc dataset features a total of 370 observations of 33 variables (listed below). Note: *alc_use* was calculated as a mean of workday alcohol consumption and weekday alcohol consumption, *high_use* is a binary variable indicating whether the student drinks more than 2 doses per day on average. The data was used in a paper by [Cortez and Silva (2008)](https://repositorium.sdum.uminho.pt/bitstream/1822/8024/1/student.pdf). More information on the dataset along with attribute descriptions can be found at [The Machine Learning Repository website](https://archive.ics.uci.edu/ml/datasets/Student+Performance).
 
 ```{r}
 alc <- read.table("data/alc.csv", header = TRUE, sep = ",", stringsAsFactors = TRUE)
 colnames(alc)
 ```
-
-
-There are a number of variables that can be studied to understand alcohol consumption among Portuguese students. Initially, I can quickly explore the content and distribution of each variable using the following code:
+There are a number of variables that can be studied to understand student alcohol consumption. To get a quick overview of the content and distribution of each variable we can use the following code:
 ```{r}
 library(tidyr); library(dplyr); library(ggplot2)
 gather(alc) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar()
 ```
+
 In order to find out which variables could possibly be statistically relevant, I begin by running a regression model explaining "alc_use" with all other variables (except for "Dalc", "Walc" and "high_use" which are directly related to "alc_use").
 ```{r}
 # exclude variables "Dalc","Walc","high_use" which are directly related to "alc_use"
 selvarnames <- names(alc) %in% c("Dalc","Walc","high_use")
 alc2 <- alc[!selvarnames == T]
-# create formula with where 'alc_use' is explained by variables in 'selvarnames'
+# create formula with where "alc_use" is explained by select variables (stored in alc2)
 fmla <- as.formula(paste("alc_use~",paste(names(alc2)[1:31],collapse="+")))
 # create linear regression model and read the summary
 model1 <- lm(data=alc2, formula = fmla)
 summary(model1)
 ```
-From the summary of the regression model, it can be read that male sex seems to be highly significant as well as the quality of family relationships and going out with friends. The variables "paid" (extra paid classes in Math or Portuguese) and "absences" (number of school absences) are fairly significant. Among the moderately significant variables are those indicating study time, travel time, whether the student attended nursery school and whether the student has taken part in extra-curricular activities.
+From the regression model summary, I can read that male sex is a highly significant variable as well as the quality of family relationships and going out with friends. The variables "paid" (extra paid classes in Math or Portuguese) and "absences" (number of school absences) are fairly significant. Moderately significant variables include study time, travel time, whether the student attended nursery school and whether the student has taken part in extra-curricular activities.
 
-In order to understand the relationship between high alcohol consumption and select variables, I choose visualize the relationship between *high alcohol comsumption* and *sex/gender, family relationships, going out* and *study time*. For the analysis, I construct a subset comprising columns 2 (sex), 22 (family relationship), 24 (going out), and 14 (study time). The visualizsation is presented in sex-disaggregated form.
+In order to understand the relationship between high alcohol consumption and select variables, I choose to visualize the relationship between *high alcohol comsumption* and *sex/gender, family relationships, going out* and *study time*. For the analysis, I construct a subset comprising columns 2 (sex), 22 (family relationship), 24 (going out), 14 (study time) and 35 (high_use. The visualizsation is presented in sex-disaggregated form.
 ```{r}
 library(ggplot2)
 library(GGally)
+#construct subset comprising columns 2 (sex), 22 (family relationship), 24 (going out), 14 (study time) and 35 (high_use)
 alcpairs <- alc[, c(2, 22,24,14,35)]
+#plot the pairs
 ggpairs(alcpairs, mapping = aes(col=sex, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
 ```
 
-From the visual presentation, I can formulate the following working hypotheses for each variable:
-- sex: men are more likely to be high consumers
-- famrel: students with high alcohol consumption generally score lower on the quality of family relationships
-- goout: high alcohol consumption is strongly related to the frequency of going out, especially for men
-- study time: students using much alcohol generally study fewer hours
+From the visual presentation, I can formulate the following working hypotheses for the select variables:
 
-The table below shows a summary of key statistics related to high and low consumers in sex-disaggregated form.
+- *sex*: men are more likely than women to be high consumers
+- *famrel*: students with high alcohol consumption generally score lower on the quality of family relationships
+- *goout*: high alcohol consumption is strongly related to the frequency of going out, especially for men
+- *study time*: students using much alcohol generally study fewer hours
+
+The table below shows a summary of key statistics related to heavy and moderate drinkers (high_use = True/False) looking at four variables (three numeric and sex/gender).
 ```{r}
 alc %>% group_by(sex, high_use) %>% summarise(count = n(), famrel=mean(famrel), goout=mean(goout), studytime=mean(studytime))
 ```
-The table above indicates what has been stated previously: Portuguese young heavy drinkers generally go out more than their moderately drinking peers. Also, they spend spend less time studying and they estimate their family relations to be worse.
 
-To indicate the relationship between family relations and heavy drinking, let's draw a separate box plot. As the chart indicates, those with moderate alcohol consumption have better family relations. The difference between groups is not, however, as big as the boxplot visualization would initially indicate. Therefore, red dots have been added to indicate mean values by group and sex.
+The table above indicates what has been stated previously: that Portuguese young heavy drinkers generally go out more than their moderately drinking peers. Also, they spend spend less time studying and they estimate their family relations to be worse.
 
-From this detailed, individual boxplot visualization, it can be seen that students with high alcohol consumption generally score lower on the quality of family relationships, but not that much lower (difference in mean values between groups: 0.34 score points for males, 0.19 for females). In this respect, the original boxplot visualization is misleading.
+To indicate the relationship between family relations and heavy drinking, let's draw a separate box plot. As the chart indicates, moderate consumers of alcohol have better family ties The difference between groups is not, however, as big as the boxplot visualization would initially indicate. Therefore, red dots have been added to indicate mean values by group and sex.
 
-NB! 1) In both groups there are outliers scoring very low on family relations. In general, however, respondents have scored much higher (median=4).
-NB! 2) This figure says little about if family relations are the cause for high alcohol consumption or a consequence of high consumption.
-NB! 3) The whole dataset says very little about genetic disposition for becoming a heavy user or alcoholic.
+The boxplot visualization indicates that students with high alcohol consumption score lower on the quality of family relationships, but the difference in mean values between groups is much lower than the visualization focused on integer values indicates: the difference is only 0.34 score points for males and 0.19 for females. In this respect, the boxplot visualization is easily misleading.
+
+NB! 1) In both groups there are outliers scoring very low on family relations. In general, however, respondents have scored fairly high (median=4).
+NB! 2) The figure says little about whether the quality of family relations are the cause or consequence of high alcohol consumption.
 ```{r}
 # initialise a plot of high_use and famrel
 g <- ggplot(alc, aes(x = high_use, y = famrel, col = sex))
-g + geom_boxplot() + ylab("family relation") + ggtitle("Quality of family relationships by alcohol consumption and sex") + theme(plot.title = element_text(hjust = 0.5)) + stat_summary(fun.y=mean)
+g + geom_boxplot() + ylab("family relation") + ggtitle("Quality of family relationships \n by alcohol consumption and sex") + theme(plot.title = element_text(hjust = 0.5)) + stat_summary(fun=mean)
 ```
-We can justify the claim of a misleading visualization by adjusting the code for the previous table and also report the median values. Now we see that there is no difference in *median* values between groups and sexes.
 
-Reporting median values will tell us that there is a greater difference in the goout variable, with heavy drinkers more inclined towards going out. The median study time remains the same, however.
+We can justify the claim of a misleading visualization by adjusting the code for the previous table and also report the *median* values. Doing this allows us to see that there is no difference in median values between groups and sexes in family relations. Reporting median values will also tell us that there is a difference in the "goout" variable, with heavy drinkers more inclined towards going out. (The median study time remains the same, 4.)
 ```{r}
-alc %>% group_by(sex, high_use) %>% summarise(count = n(), famrel_mean=mean(famrel), famrel_median=median(famrel), goout_mean=mean(goout), goout_median=median(goout), studytime_mean=mean(studytime), studytime_median=median(studytime))
+alc %>% group_by(sex, high_use) %>% summarise(count = n(), famrel_mean=mean(famrel), famrel_median=median(famrel), goout_mean=mean(goout), goout_median=median(goout))
 ```
 
-### Applying logistic regression to explore the relationship between gender, family relations, going out and study time for heavy drinkers
+### Applying logistic regression to understand the relationship between high alcohol usage and select variables
 
+In the logistic regression model, the computational target variable is the log of odds. From this it follows that applying the exponent function to the fitted values gives us the odds. That is, the *exponents of the coefficients* can be interpreted as odds ratios between a unit change (vs no change) in the corresponding explanatory variable (according to the [course video](https://campus.datacamp.com/courses/helsinki-open-data-science/logistic-regression?ex=10) on Data Camp).
 
+From this we see that with an odds ratio of over 2, males are more than twice as likely to have a "success" (that is, become heavy drinkers) compared to their female peers when controlling for family relations, going out and study time. The same goes for those student spending much time going out. On the other hand, those students with good family relations and spending much time studying are not as likely to become heavy drinkers; their odds ratios are only about 2/3 compared with their average peers.
 
-5. Use logistic regression to statistically explore the relationship between your chosen variables and the binary high/low alcohol consumption variable as the target variable. Present and interpret a summary of the fitted model. Present and interpret the coefficients of the model as *odds ratios* and provide *confidence intervals* for them. Interpret the results and compare them to your previously stated hypothesis. Hint: If your model includes factor variables see for example the first answer of this stackexchange thread on how R treats and how you should interpret these variables in the model output (or use some other resource to study this). (0-5 points)
+The confidence intervals presented in the two rightmost columns (2.5 % and 97.5%) in the table below gives us an indication about the spread. From this we see for instance that there is a wider spread between males than between those going out. Although the odds ratio is about the same in both groups some males will have considerably higher odds compared to some outgoers.
 
+The data presented here largely supports my initial working hypotheses about men being more likely than women to be high consumers, about students with high alcohol consumption generally scoring lower on the quality of family relationships, about high alcohol consumption being related to the frequency of going out and about lower study times being related to higher alcohol consumption.
+
+However, revisiting the hypotheses reveals to me a somewhat erroneous wording and approach, focusing to much on the faults of those that I have called heavy drinkers (or those with a positive high_use variable). It would perhaps be more fair to comment on the relationship between high daily alcohol doses and background factors, and try to remove any judgmental attitudes.
+
+Below is the printout of the summary of the logistic regression model and the table with odds ratios and confidence intervals.
 ```{r}
 m <- glm(high_use ~ sex + famrel + goout + studytime, data = alc, family = "binomial")
 summary(m)
-
 # compute odds ratios (OR)
 OR <- coef(m) %>% exp
-
 # compute confidence intervals (CI)
 CI <- exp(confint(m))
-
 # print out the odds ratios with their confidence intervals
 cbind(OR, CI)
 ```
 
-6. Using the variables which, according to your logistic regression model, had a statistical relationship with high/low alcohol consumption, explore the predictive power of you model. Provide a 2x2 cross tabulation of predictions versus the actual values and optionally display a graphic visualizing both the actual values and the predictions. Compute the total proportion of inaccurately classified individuals (= the training error) and comment on all the results. Compare the performance of the model with performance achieved by some simple guessing strategy. (0-3 points)
 
-- explore the predictive power of you model.
-- 2x2 cross tabulation of predictions versus the actual values
-- optionally display a graphic visualizing both the actual values and the predictions.
-- total proportion of inaccurately classified individuals (= the training error) - comment on all the results
-- Compare the performance of the model with performance achieved by some simple guessing strategy.
+Due to the chosen method at the start of this exercise, all of the variables controlled for were found to be statistically significant, one on a 0.1 per cent level and three on a 1 per cent level. I can therefore explore the predictive power of my model as such.
+
 ```{r}
 # predict() the probability of high_use
 probabilities <- predict(m, type = "response")
-# add the predicted probabilities to 'alc'
+# add the predicted probabilities to "alc"
 alc <- mutate(alc, probability = probabilities)
 # use the probabilities to make a prediction of high_use
 alc <- mutate(alc, prediction = probabilities > 0.5)
-# explore what alc now looks like
-head(alc[alc$goout == 5,])
-# tabulate the target variable versus the predictions
-table(high_use = alc$high_use, prediction = alc$prediction)
+# tabulate the target variable versus the predictions. The numbers are the count of individuals.
+table(high_use = alc$high_use, prediction = alc$prediction) 
+# tabulate the target variable versus the predictions. The table shows the proportions.
+table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table() %>% addmargins()
+```
+
+Based on the data and the reported alcohol intake, exactly 30 per cent of respondents (111 of 370) were classified as heavy drinkers (high_use = true). Equally, 70 per cent (259 individuals) were classified as non-heavy drinkers (high_use = false). According to the model, 29 of 259 moderately drinking individuals (11 per cent) were erroneously predicted to be heavy drinkers. Out of 111 heavy drinkers, a majority (59) were erroneously predicted not be high_users although they were according on the data.
+
+Although the model did fairly well in recognizing non-heavy users, it did worse in predicting heavy drinkers among those who in fact were (based on the reported intake). Overall, the model predicted 78 per cent of respondents to be non-heavy users, while the actual proportion was 70 per cent.
+
+The proportion of wrongly classified individuals is displayed visually in the plot below. As the visualization makes clear, the proportion of inaccurately classified individuals (i.e. the training error) is fairly high. The mean prediction error can be computed by defining a loss function and comparing classifications and probabilities. The calculation indicates that nearly 24 per cent are wrongly classified. I would not have expected the analysis to give such a high number. On the other hand, the model could become more accurate with a higher number of observations.
+
+```{r}
 # initialize a plot of 'high_use' versus 'probability' in 'alc'
 g <- ggplot(alc, aes(x = probability, y = high_use, col = prediction))
 # define the geom as points and draw the plot
 g + geom_point()
-# tabulate the target variable versus the predictions
-table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table() %>% addmargins()
 # define a loss function (mean prediction error)
 loss_func <- function(class, prob) {
   n_wrong <- abs(class - prob) > 0.5
@@ -139,53 +137,40 @@ loss_func <- function(class, prob) {
 # call loss_func to compute the average number of wrong predictions in the (training) data
 loss_func(class = alc$high_use, prob = alc$probability)
 ```
-A note on the usefulness of the model:
+### A note on the usefulness of the model
 
-At the loss rate of 24 per cent, it seems as if the model is not very accurate. Can I use the information? It depends of course on the purpose. For instance, if the goal was to target alcohol advertisements on social media (assuming that heavy drinkers would be more inclined to buy booze), the information could definitely be useful (if was legal or moral to target alcohol ads at minors). For identifying who will become an alcoholic in five years and who would need more interrogative actions, the model is far too inaccurate. At this level of accuracy, one could perhaps only target information campaigns on the potential harms caused by to heavy drinking at heavy users.
+At the loss rate of 24 per cent, it seems as if the model is not very accurate. Can I use the information? It depends on the purpose. For instance, if the goal was to target alcohol drinkers and feed them with advertisements on social media (assuming that heavy drinkers would be more inclined to buy booze), the information could definitely be useful (if one wanted to target alcohol ads at minors...). For identifying who will become an alcoholic in five years and who would need interrogative and intervening actions, the model is far too inaccurate. At this level of accuracy, one could perhaps only target information campaigns on the potential harms caused by drinking at an early age.
+
+### Bonus: Performing ten-fold cross-validation on the model
+
+With ten-fold cross-validation, the prediction error seems to be larger than when using the loss function (with a difference of about one percentage point).
 
 ```{r}
-# K-fold cross-validation
+# Performing ten-fold cross-validation
 library(boot)
 cv <- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]
-```
-7. bonus
-Perform 10-fold cross-validation on your model. Does your model have better test set performance (smaller prediction error using 10-fold cross-validation) compared to the model introduced in DataCamp (which had about 0.26 error). Could you find such a model? (0-2 points to compensate any loss of points from the above exercises)
-
-Actually, With 10-fold cross-validation, the prediction error seems to be larger than when using the loss function (with a difference of about one percentage point).
-```{r}
+# calculating the difference between using ten-fold cross-validation and a loss function
 cv$delta[1]-loss_func(class = alc$high_use, prob = alc$probability)
 ```
 
+### Super-Bonus: Performing cross-validation to compare the performance of different logistic regression models
 
-I will write a for loop to construct as many formulas as there are variables in the dataset. I begin by making the cross-validation using the largest number of variables and decrease the numbers one by one. The results are saved in a data frame along with the number of variables used.
+Finally, I will perform cross-validation to compare the performance of different logistic regression models using different sets of predictors. I start with the maximum number of predictors and explore the changes in the training and testing errors as I drop variables one by one. The original dataset contained 33 variables, but since *high_use* is directly related to *Walc* and *Dalc*, I choose to exclude these for computational feasibility.
 
-No of variables   prediction error
-33                0.25
-32                0.24
-31                0.23
-30                0.22
+In practice, I begin with creating a vector with running numbers in decreasing order from 31 to 1 indicating how many variables I will test at a time. I then create two more empty vectors, where I will save the results from the computational exercise. The three vectors will be used to construct the resulting data frame.
 
-calculate a number of formulas based on the 
+I then write a for loop to construct as many formulas as there are variables at any given time. I begin by making the cross-validation using the largest number of variables (31) The results are saved in a data frame along with the number of variables used. The resulting table will have three columns indicating *Number of variables, Prediction error rate* and *Training error rate* and 31 rows, one for every run.
 
-- compare the performance of different logistic regression models
-- start with a high number of predictors
-- explore the changes in the training and testing errors as you move to models with less predictors
+Finally, I construct a plot indicating how both prediction and training errors decrease as the number of variables increase, with prediction errors always being greater. Looking at the resulting plot, I found it initially tough to digest the great variance and especially the initially increasing trend in prediction errors. But I guess that might have been be a result of a varying number of statistically significant variables being used in the different models.
 
-8. Super-Bonus: Perform cross-validation to compare the performance of different logistic regression models (= different sets of predictors). Start with a very high number of predictors and explore the changes in the training and testing errors as you move to models with less predictors. Draw a graph displaying the trends of both training and testing errors by the number of predictors in the model. (0-4 points to compensate any loss of points from the above exercises)
-
-
-Perform cross-validation to compare the performance of different logistic regression models
-Start with a very high number of predictors
-explore the changes in the training and testing errors
-Draw a graph displaying the trends of both training and testing errors
-
+The downside of the fairly long code written below is the time it takes to execute it. I have found that executing this last chunk alone - comparing different models with up to 31 variables - takes about three minutes. The time needed makes me relucant to run the code and test for any small changes, unless I have reduced the number of variables to a handful. If you have any suggestions on how to improve the code and speed up the process, I will gladly appreaciate your suggestions!
 
 ```{r}
 library(dplyr)
 library(boot)
-howmanyvar <- 31 #Enter here how many variables you want to test for. 31 is the maximum. (33 variables were included in the original dataset but two have been excluded for computational feasibility.)
+howmanyvar <- 31 #Enter here how many variables you want to test for. 31 is the maximum. (33 variables were included in the original dataset but two of these will always be excluded for computational feasibility and avoidance of near-perfect correlation.)
 #create vector, in sequence, starting from the number above, descending by 1.
 v <- rev(seq(1,howmanyvar))
 #create empty numeric vectors of same length for the results.
@@ -197,14 +182,12 @@ loss_func <- function(class, prob) {
   mean(n_wrong)
 }
 for(i in v) {
-#Within the for looo, I first create temporary subsets called "alctest". I choose to exclude variables "Dalc", "Walc" as these were found to cause warnings when executing the logistic regression model and counting probabilities (highly correlated with "high_use"). I also exclude "probability" and "prediction" as the probability has been calculated based on the whole dataset and will now be replaced.
+#Within the for loop, I first create temporary subsets called "alctest". I choose to exclude variables "Dalc", "Walc" as these were found to cause warnings when executing the logistic regression model and counting probabilities (highly correlated with "high_use"). I also exclude "probability" and "prediction" as the probability has been calculated based on the whole dataset and this will now be replaced.
 exclvarnames <- names(alc) %in% c("Dalc","Walc", "alc_use", "probability", "prediction")
 alctest <- alc[!exclvarnames == T]
-#From the alctest subset I will gradually drop columns one at a time, starting from the number of variables entered in >howmanyvar<.
-names(alctest)
+#From the alctest subset I will gradually drop columns one at a time, starting from the number of variables entered in "howmanyvar". In alctest, 32 has become the index number for the variable high_use. Therefore, I always want to include that one.
 alctest <- dplyr::select(alctest, 1:v[i], 32)
-names(alctest)
-#I also exclude "high_use" as I create a vector with select columns names to be used as the right hand side in the formula.
+#However, I want to exclude "high_use" from the vector with columns names that I want to use on the right-hand side in the formula.
 fnames <- names(alctest)[names(alctest) !="high_use"]
 # create formula where "alc_use" is explained by the variables
 f <- as.formula(paste("high_use~",paste(fnames,collapse="+")))
@@ -224,6 +207,5 @@ predictionerrors[i] <- cv$delta[1]
 results <- data.frame(variables=v, trainingerrors=trainingerrors, predictionerrors=predictionerrors)
 results
 p <- ggplot(results, aes(x=variables)) + geom_line(aes(y=predictionerrors, color="prediction")) + geom_line(aes(y=trainingerrors, color="training"))
-p + ggtitle("Relation between error rates\n and number of variables") +
-    xlab("Number of variables") + ylab("Error rate") + scale_color_discrete(name="Type of error")
+p + ggtitle("Relation between error rates\n and number of variables") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Number of variables") + ylab("Error rate") + scale_color_discrete(name="Type of error")
 ```
