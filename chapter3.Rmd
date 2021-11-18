@@ -1,3 +1,8 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 # RStudio Exercise 3
 
 *Describe the work you have done this week and summarize your learning.*
@@ -20,6 +25,8 @@ colnames(alc)
 ```
 There are a number of variables that can be studied to understand student alcohol consumption. To get a quick overview of the content and distribution of each variable we can use the following code:
 ```{r}
+fig.width=8
+fig.height=6
 library(tidyr); library(dplyr); library(ggplot2)
 gather(alc) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar()
 ```

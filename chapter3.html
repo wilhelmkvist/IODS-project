@@ -176,7 +176,7 @@ pre code {
 <li>Assume the reader has no previous knowledge of your data or the more advanced methods you are using.</li>
 </ul>
 <pre class="r"><code>date()</code></pre>
-<pre><code>## [1] &quot;Thu Nov 18 14:13:40 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Thu Nov 18 14:43:37 2021&quot;</code></pre>
 <div id="exploring-alcohol-consumption-among-portuguese-secondary-school-students---an-overview-of-the-alc-dataset" class="section level3">
 <h3>1. Exploring alcohol consumption among Portuguese secondary school students - an overview of the Alc dataset</h3>
 <p>The Alc dataset provides data on alcohol consumption among Portuguese secondary school students aged 15 to 22 (mean 16.6 years). The data was collected using school reports and questionnaires. Attributes include student grades, demographic, social and school related features. The Alc dataset was constructed by joining two separate sets on student performance in two distinct subjects: Mathematics and Portuguese. As some students were known to have appeared in both sets, duplicates were identified and removed.</p>
@@ -191,7 +191,9 @@ colnames(alc)</code></pre>
 ## [26] &quot;Walc&quot;       &quot;health&quot;     &quot;failures&quot;   &quot;paid&quot;       &quot;absences&quot;  
 ## [31] &quot;G1&quot;         &quot;G2&quot;         &quot;G3&quot;         &quot;alc_use&quot;    &quot;high_use&quot;</code></pre>
 <p>There are a number of variables that can be studied to understand student alcohol consumption. To get a quick overview of the content and distribution of each variable we can use the following code:</p>
-<pre class="r"><code>library(tidyr); library(dplyr); library(ggplot2)</code></pre>
+<pre class="r"><code>fig.width=8
+fig.height=6
+library(tidyr); library(dplyr); library(ggplot2)</code></pre>
 <pre><code>## 
 ## Attaching package: &#39;dplyr&#39;</code></pre>
 <pre><code>## The following objects are masked from &#39;package:stats&#39;:
@@ -419,10 +421,10 @@ library(boot)
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.2486486</code></pre>
+<pre><code>## [1] 0.2351351</code></pre>
 <pre class="r"><code># calculating the difference between using ten-fold cross-validation and a loss function
 cv$delta[1]-loss_func(class = alc$high_use, prob = alc$probability)</code></pre>
-<pre><code>## [1] 0.01081081</code></pre>
+<pre><code>## [1] -0.002702703</code></pre>
 </div>
 <div id="super-bonus-performing-cross-validation-to-compare-the-performance-of-different-logistic-regression-models" class="section level3">
 <h3>Super-Bonus: Performing cross-validation to compare the performance of different logistic regression models</h3>

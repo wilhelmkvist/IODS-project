@@ -190,7 +190,7 @@ pre code {
 <pre class="r"><code># This is a so-called &quot;R chunk&quot; where you can write R code.
 
 date()</code></pre>
-<pre><code>## [1] &quot;Thu Nov 18 14:19:52 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Thu Nov 18 14:47:23 2021&quot;</code></pre>
 <hr />
 </div>
 <div id="rstudio-exercise-2" class="section level1">
@@ -202,7 +202,7 @@ date()</code></pre>
 <li>Assume the reader has no previous knowledge of your data or the more advanced methods you are using.</li>
 </ul>
 <pre class="r"><code>date()</code></pre>
-<pre><code>## [1] &quot;Thu Nov 18 14:19:52 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Thu Nov 18 14:47:23 2021&quot;</code></pre>
 <div id="learning-2014---an-overview-of-the-dataset" class="section level3">
 <h3>1. Learning 2014 - an overview of the dataset</h3>
 <p>The dataset ‘Learning 2014’ contains data from a survey among students in the social sciences at University of Helsinki. The data was collected during an introductory course in statistics in late 2014 and early 2015. Participation was voluntary, but students were strongly encouraged to take part as they were reimbursed with extra points in the final exam. Respondents (N=183) were presented with a set of questions designed to reflect their attitudes towards statistics and university studies in general. Learning approaches were measured with questions designed to reflect deep, surface, and strategic approaches. The present dataset (a subset of a larger dataset) contains 166 observations (by all those who participated in the final exam) of 7 variables. In addition to mean scores reflecting attitude and learning approaches, the total points in the final exam are provided. Background information was provided on the respondents’ age and gender (female/male).</p>
@@ -339,7 +339,7 @@ plot(model1, which = c(1,2,5))</code></pre>
 <li>Assume the reader has no previous knowledge of your data or the more advanced methods you are using.</li>
 </ul>
 <pre class="r"><code>date()</code></pre>
-<pre><code>## [1] &quot;Thu Nov 18 14:19:59 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Thu Nov 18 14:47:30 2021&quot;</code></pre>
 <div id="exploring-alcohol-consumption-among-portuguese-secondary-school-students---an-overview-of-the-alc-dataset" class="section level3">
 <h3>1. Exploring alcohol consumption among Portuguese secondary school students - an overview of the Alc dataset</h3>
 <p>The Alc dataset provides data on alcohol consumption among Portuguese secondary school students aged 15 to 22 (mean 16.6 years). The data was collected using school reports and questionnaires. Attributes include student grades, demographic, social and school related features. The Alc dataset was constructed by joining two separate sets on student performance in two distinct subjects: Mathematics and Portuguese. As some students were known to have appeared in both sets, duplicates were identified and removed.</p>
@@ -354,7 +354,9 @@ colnames(alc)</code></pre>
 ## [26] &quot;Walc&quot;       &quot;health&quot;     &quot;failures&quot;   &quot;paid&quot;       &quot;absences&quot;  
 ## [31] &quot;G1&quot;         &quot;G2&quot;         &quot;G3&quot;         &quot;alc_use&quot;    &quot;high_use&quot;</code></pre>
 <p>There are a number of variables that can be studied to understand student alcohol consumption. To get a quick overview of the content and distribution of each variable we can use the following code:</p>
-<pre class="r"><code>library(tidyr); library(dplyr); library(ggplot2)</code></pre>
+<pre class="r"><code>fig.width=8
+fig.height=6
+library(tidyr); library(dplyr); library(ggplot2)</code></pre>
 <pre><code>## 
 ## Attaching package: &#39;dplyr&#39;</code></pre>
 <pre><code>## The following objects are masked from &#39;package:stats&#39;:
@@ -579,10 +581,10 @@ library(boot)
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.2459459</code></pre>
+<pre><code>## [1] 0.2432432</code></pre>
 <pre class="r"><code># calculating the difference between using ten-fold cross-validation and a loss function
 cv$delta[1]-loss_func(class = alc$high_use, prob = alc$probability)</code></pre>
-<pre><code>## [1] 0.008108108</code></pre>
+<pre><code>## [1] 0.005405405</code></pre>
 </div>
 <div id="super-bonus-performing-cross-validation-to-compare-the-performance-of-different-logistic-regression-models" class="section level3">
 <h3>Super-Bonus: Performing cross-validation to compare the performance of different logistic regression models</h3>
