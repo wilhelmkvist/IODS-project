@@ -1,0 +1,205 @@
+# RStudio Exercise 4
+
+```{r}
+date()
+```
+
+### The Boston dataset - a brief description
+
+The Boston dataset, included in the MASS package, contains 506 observations of 14 variables relating to housing in the Boston region. Each observation describes a Boston suburb or town. Variables include information such as crime rate, air pollution, ethnic composition, proportion of land for large properties or industries, taxation, distances, communications and pricing. As has been state [elsewhere](https://towardsdatascience.com/things-you-didnt-know-about-the-boston-housing-dataset-2e87a6f960e8) the dataset has become a much-used pedagogical tool for teaching regression analysis and machine learning. First, let us swiftly explore the contents!
+
+```{r}
+# accessing the MASS package
+library(MASS)
+# loading the Boston data
+data("Boston")
+# typing ?Boston will open the documentation on the variables in the R console. A description can also be found [here] (https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html).
+?Boston
+# a summary of the content of the variables is given below
+summary(Boston)
+```
+
+It is perhaps hard to form an understanding of the relationship between the 14 variables simply by mapping pairs. Drawing a corrplot diagram allows us to get a quick overview of the correlation between variables. The greater the circle, the greater the correlance. Red indicates negative correlance, blue positive.
+
+```{r}
+# plotting the relation between variables with corrplot
+library(tidyr)
+library(corrplot)
+# rounding values
+cor_matrix<-cor(Boston) %>% round(2)
+# drawing a corrplot
+corrplot(cor_matrix, method="circle", type = "upper", tl.cex = 0.6, tl.pos = "d")
+# contrary to the instructions provided on Data Camp, I choose to exclude the 'cl.pos = "b"' command, as I prefer to have the color legend vertically on the right rather than horizontally below the figure.
+```
+
+What sticks out from the visualization above is the strong negative correlation between the distance to employment centres (dis) and the proportion of old houses (age), nitrogen oxides concentration in the air (nox) and proportion of non-retail businesses (indus).That is, the further away we are from employment centres, the higher the proportion of new houses, the higher the share of industrial properties and the higher the concentration of nitrogen oxides in the air.
+
+Similarly, there is a strong positive correlation between accessibility to highways (rad) and property-tax rate (tax). That is, the better the access to highways, the higher the property tax rate.
+
+In the following section, I will standardize the variables which allows me to compare them more easily and perform additional operations using them. (Ideally, I would explore the differences between the standardized and non-standardized variables graphically, for instance using the ggplot bar graph technique described [here](https://community.rstudio.com/t/ggplot-bar-graph-multiple-variables/33567/2), but as this was not specifically demanded, I suspect this would perhaps be beyond the scope of this exercise.) For now, it will suffice to print out a summary of the variables in the standardized set.
+
+From comparing the summaries, it can be seen that the range of select variables has decreased significantly (e.g. crim, zn, indus). In fact, the maximum value of crim (9.92) represents the maximum value of all standardized variables. As all variables have now been centered around a mean of zero, minimum values have all become negative for all variables.
+
+```{r}
+# center and standardize variables
+boston_scaled <- scale(Boston)
+# change the object to data frame
+boston_scaled <- as.data.frame(boston_scaled)
+# summarize the scaled variables
+summary(boston_scaled)
+```
+
+As instructed, I continue by creating a categorical variable for the crime rate using the quantiles as break points. I choose to name the variables from low to high. I then drop the old crime rate variable from the boston_scaled dataset.
+
+```{r}
+# create a quantile vector of crim and print it
+bins <- quantile(boston_scaled$crim)
+# create a categorical variable 'crime'
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low","med_low","med_high","high"))
+# remove original crim from the dataset
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
+```
+
+Moreover, I divide the dataset into train and test sets so that 80% of the data belongs to the train set. This is done as a means of preparation for fitting a linear discriminant analysis model on the train set.
+
+```{r}
+# dividing the dataset into train and test sets, so that 80% of the data belongs to the train set. I randomly assign 80 per cent of the rows in the Boston dataset to the train set.
+n <- nrow(Boston)
+ind <- sample(n,  size = n * 0.8)
+# create train set
+train <- boston_scaled[ind,]
+# create test set 
+test <- boston_scaled[-ind,]
+```
+
+Now that I have created the train and test sets, I continue by fitting the linear discriminant analysis on the train set. I choose the categorical crime rate (crime) as target variable and all the other variables as predictor variables. I will also plot the LDA fit. The chunk below includes a code for defining a function for enriching the plot with arrows.
+
+```{r}
+# fitting the linear discriminant analysis on the train set using the categorical crime rate as target variable and all other variables in the dataset as predictor variables.
+lda.fit <- lda(crime ~ ., data = train)
+# this function can be used for adding arrows to the biplot that will be plotted next
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+# target classes as numeric
+classes <- as.numeric(train$crime)
+# plotting the lda results with arrows added
+plot(lda.fit, dimen = 2, col=classes, pch=classes)
+lda.arrows(lda.fit, myscale = 2)
+```
+
+The image drawn above gives an indication of in which direction the various variables draws the results. The longest arrow ic clearly given by the rad variable, zn and nox also pulling the results fairly strongly in different directions.
+
+Continuing to follow the given instructions, I save the crime categories from the test data before removing the crime variable. This allows me to evaluate the correctness of predictions when using the test data to predict crime classifications. The cross tabulation of predictions and correct results is given below.
+
+The results of the cross tabulation are interesting especially looking at the four corners. None of the areas where the crime rate was predicted low actually had high crime rates and vice versa. And similarly: where crime rates were predicted high, they actually were high, and where they were predicted low, they chiefly were low. Some variation occured nevertheless as to how right the prediction was. For instance, of those areas with low rates only half were correctly classified as areas with low rates (the other half were classified as med_low with one instance as med_high). It seems as if the model did a better job in getting areas with high criminal rates right than areas with low rates.
+
+```{r}
+# saving crime categories from test data
+correct_classes <- test$crime
+# remove the crime variable from test data
+test <- dplyr::select(test, -crime)
+# predicting classes with the test data
+lda.pred <- predict(lda.fit, newdata = test)
+# cross tabulating the results with the crime categories from the test set (removed from the test set)
+table(correct = correct_classes, predicted = lda.pred$class)
+```
+
+I will now continue to execute the last step of the exercise proper. I begin by reloading the Boston dataset and standardize the variables. I will prepare a euclidean distance matrix to calculate the distances between the observations, and then run a k-means algorithm on the dataset to let the computer sort and clusterize the data. The clusters generated by the k-means algorithm will be plotted.
+
+```{r}
+# reloading the Boston dataset
+library(MASS)
+data("Boston")
+# standardizing the dataset
+Boston <- scale(Boston)
+# preparing a euclidean distance matrix
+dist_eu <- dist(Boston)
+# running a k-means algorithm on the dataset
+km <-kmeans(Boston, centers = 3)
+# plotting the results
+pairs(Boston, col = km$cluster)
+```
+
+As is seen, the chart above looks really busy. We can determine the optimal number of clusters by plotting the results of a k-means algorithm run with the numbers from 1 to 10. The result is given below.
+
+The optimal number of clusters is supposed to be when the curve drops sharply. In this case, there is no self-evident answer to what is the optimal number. In my interpretation, the drop is at its sharpest with two cluster centers, after which the decline slows down. I find it reasonable to cluster using two centers. A new plot is printed below.
+
+```{r}
+# calculating the total within sum of squares (up to 10 clusters)
+set.seed(123) #this command is used in conjunction with the function
+twcss <- sapply(1:10, function(k){kmeans(Boston, k)$tot.withinss})
+# visualizing the results
+library(ggplot2)
+qplot(x = 1:10, y = twcss, geom = 'line') + scale_x_continuous(breaks = c(2,4,6,8,10), limits=c(1,10))
+# running again the k-means algorithm on the dataset with the newly determined optimal number of clusters
+km <-kmeans(Boston, centers = 2)
+# plotting the results with pairs
+pairs(Boston, col = km$cluster)
+```
+
+For the bonus section, I will run the k-means algorithm on the original (standardized) Boston data with 3 cluster centers. An LDA is performed with clusters as target classes. The biplot with arrows is given below. As it appears as if zn, nox, medv and tax are the most influential linear separators for the clusters. That is, the proportion of residential land allocated for large properties, air pollution, price level and property tax rate seem to be the variables most strongly influencing which cluster a particular area belongs to.
+
+```{r}
+# reloading the Boston dataset once more
+library(MASS)
+data("Boston")
+# standardizing the dataset
+Boston <- as.data.frame(scale(Boston))
+# performing k-means on the dataset
+km <-kmeans(Boston, centers = 3)
+# saving clusters to be used with the LDA
+clusters <- km$cluster
+# adding the new clusters variable to the set
+Boston <- data.frame(Boston, clusters)
+# dividing the dataset into train and test sets to be used with the LDA
+n <- nrow(Boston)
+ind <- sample(n,  size = n * 0.8)
+train2 <- Boston[ind,]
+# removing chas because I repeatedly received the error message "variable 4 appears to be constant within groups"
+train2 <- dplyr::select(train2, -chas)
+# performing the lda
+lda.fit2 <- lda(clusters ~ ., data = train2)
+# defining the arrows function
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+# plotting the lda results with arrows
+plot(lda.fit2, dimen = 2, col=clusters, pch=clusters, ylim=c(-5,7),xlim=c(-5,5))
+lda.arrows(lda.fit2, myscale = 4)
+```
+
+For the super bonus section, I apply the given code that helps me to create a matrix product, a projection of the data points that will be visualized. I will draw two 3D plots, one where the color is defined by the categorical crime classes, another where the color is defined by the clusters of the k-means. As can be seen here, the shape of the plots is identical. However, the colouring attributed by the categorical crime classes is much more 'neat', aiding the eye in forming an understanding of which elements that belong together. For instance, all yellow values are gathered at the left hand side of the chart (with high x values). Turning and twisting the graphic with the mouse helps understanding the data even better.
+
+```{r}
+model_predictors <- dplyr::select(train, -crime)
+# check the dimensions
+dim(model_predictors)
+dim(lda.fit$scaling)
+# matrix multiplication
+matrix_product <- as.matrix(model_predictors) %*% lda.fit$scaling
+matrix_product <- as.data.frame(matrix_product)
+# accessing the plotly package in order to create a 3D plot of the columns of the matrix product. (I have ran the command install.packages("plotly") once already.)
+library(plotly)
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = ~classes)
+# extracting the clusters from the second train set
+cluscol <- train2$clusters
+# drawing the second plot
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = ~cluscol)
+```
+
+
+
+
