@@ -53,5 +53,5 @@ write.csv(human, file = "./data/human.csv", row.names = F)
 # Reading the data again
 import_data <- read.csv("./data/human.csv", stringsAsFactors = F)
 
-#Confirm the structure of the imported dataset
+# Confirming the structure of the imported dataset
 str(import_data)
