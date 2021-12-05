@@ -1,0 +1,121 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+# RStudio Exercise 5
+
+```{r}
+date()
+```
+
+### The Human dataset - an overview
+
+The human dataset contains country-specific indicators relating to the Human Development Index (HDI), provided by the United Nations Development Programme. The index measures achievements in dimensions of human development such as health and longevity, education and standard of living. 
+
+Variables included in this exercise indicate the ratio of women to men in secondary education and labour force, as well as expected length of education and life. Variables also include Gross National Income as a measure of standard of living, and maternal mortality and adolescent birth rate as measures of the level of health care provided to young women.
+
+```{r}
+# reading the human data from my data folder
+human <- read.csv("./data/human.csv", stringsAsFactors = F, row.names = 1)
+# exploring the data structure
+head(human)
+summary(human)
+# plotting pairs
+library(GGally)
+ggpairs(human)
+```
+
+Below is a corrplot diagram of the correlation relations between variables. Based on the data, it is interesting to note that parliament representation does not seem to be particularly strongly correlated with anything. At least from the corrplot diagram, no strong correlation can be discerned (share of females in parliament is moderately correlated with labour force ratio, expected length of education and life expectancy). Neither does labour force ratio seem to be strongly correlated with anything.
+
+```{r}
+# drawing a corrplot
+library(corrplot)
+cor(human) %>% corrplot()
+```
+
+### Performing principal component analysis (PCA)
+
+First, I will perform a principal component analysis (PCA) on the 
+*non-standardized* human data, as instructed in the exercise. The variability captured by the principal components is given in the printout of values below. The plot highlights the impact of the Gross National Income (GNI) variable as this was the one variable containing the largest absolute numbers (maximum values over 100 times larger than in any other variable).
+
+```{r, fig.width = 10, fig.height=10}
+# perform principal component analysis (with the SVD method) on the human dataset in its *non-standardized* form
+pca_human <- prcomp(human)
+# exploring the variability captured by the principal components
+summary(pca_human)$importance[2,]
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human, choices = 1:2, cex = c(0.6, 0.9), col = c("grey40", "deeppink2"), main = "Impact of GNI on HDI")
+```
+
+Now, I will redo the PCA analysis with standardized variables.
+
+```{r, fig.width = 10, fig.height=10}
+# standardize variables
+human_std <- scale(human)
+# perform principal component analysis (with the SVD method) on the human dataset in its *standardized* form
+pca_human_std <- prcomp(human_std)
+# exploring the variability captured by the principal components
+s <- summary(pca_human_std)$importance[2,]
+s
+# save rounded percetanges of variance captured by each PC (to be used as axis labels)
+pca_pr <- round(s*100, digits = 1)
+# create object pc_lab (to be used as axis labels)
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human_std, choices = 1:2, cex = c(0.6, 0.9), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2], main = "Interconnected variables impacting HDI")
+```
+
+As was seen above, the first plot drawn from the non-standardized version was extremely hard to read as almost all results in the scatter plot were pushed into the upright corner into a really crowded space. Because of the high absolute values reported in the GNI variable, that is about the only arrow whose direction is visible in the first plot; I can't even tell if there are any arrows pointing in any other direction (I suppose the arrows of ParlRep and LabRatio are pointing upwards, but they are at least not properly visible.)
+
+The Human Development Index (HDI) is a summary measure of average achievement in key dimensions of human development: a long and healthy life, being knowledgeable and have a decent standard of living according to the [UNDP](http://hdr.undp.org/en/content/human-development-index-hdi).
+
+From the latter plot we can discern three groups of variables that seem to influence the HDI index value in different ways. Life expectancy, maternal mortality and adolescent birth rate are all related to living a long and healthy life. Life expectancy is negatively correlated with maternal mortality and adolescence birth rate, and so the arrows here pull results in opposite directions.
+
+The proportion of women in labour force and parliament (visible as arrows pointing upwards) can be interpreted as variables measuring women's possibilities to participate in and impact society. The proportion of women in parliament is moderately correlated with the proportion of women in the labour force.
+
+Interestingly, the ratio of women to men in secondary education is more strongly related to life expectancy than to the proportion of women in parliament or the ratio of women to men in the labour force. Being knowledgeable seems to be more strongly correlated with being able to live a long and healthy life than the ability to participate in working life and national politics.
+
+### Balancing national income and gender equality - interpreting the first two principal component dimensions of the PCA
+
+The scatter plot presented through the PCA analysis is a very interesting one. The GNI variable that stood out in the first plot is now almost entirely hid behind the EduRatio variable (and thus very strongly correlated with that variable). In a way, this is the key to understanding the horizontal x axis of the plot. On the left-hand side, we find rich countries, both European, Asian and Arab. On the right-hand side, we find poorer countries, many of which have been hit by war and poverty and lack good public health services.
+
+The vertical y axis is also an interesting one, although initially harder to label. I speculated over wheter it was a conservative-liberal axis or  progressive-reactionary axis, before I concluded that the y axis is all about gender equality. Let me explain why.
+
+The angle between a variable and a PC axis can be interpret as the correlation between the two. In the case of the x axis, the difference in angle is minimal between the variables at each horizontal end. As the difference in angle between the ParlRep and LabRatio variables and the y axis are almost as small (although significantly larger), one could understand the y axis as an axis reflecting equality between women and men (in politics and the workforce), placing Rwanda at the top and hard-line Arab states at the bottom. (Rwanda's top placement might come in as a surprise for somebody, but the power balance between men and women in Rwanda, and attitudes and approaches chosen by Rwandian women, have been elaborated in some media articles for example [here](https://www.npr.org/sections/goatsandsoda/2018/01/10/577018509/rwanda-ranks-in-the-top-5-for-gender-equity-do-its-teen-girls-agree).)
+
+In principal component analyses, the first principal component captures the maximum amount of variance from the features of the original data. In this instance, the PC1 (relating to life expectancy and health issues) explains just over half of the variance. But the gender equality aspects relating to female representation in the labour force and national politics account for only a sixth of the variance between countries. (Note how one single variable, the GNI explained 99 per cent of the variation in the erroneous first plot.)
+
+A note on the side: What the plots - and the data - has not said anything about is the division of income and wealth distribution within countries. Attempts to quantify inequality have at various times been made using for instance the Gini coefficient, although this measurement unit has shortcomings of its own (it does not for instance take into account the effect of income redistributions, differences in living expenses between countries as well as distribution of wealth).
+
+### Exploring tea drinking habits
+
+The tea dataset of the FactoMineR package includes 300 observations of 36 variables relating to tea drinking habits. Most variables are factors with 2 levels (i.e. binaries), but some variables include factors with more levels. Initially, I will visualise the data by drawing histograms of six of the most interesting variables. I will then conduct a Multiple Correspondence Analysis on the tea data and offer an interpretation the results of the MCA and draw a variable biplot.
+
+```{r}
+# loading the tea dataset
+library(FactoMineR) #I installed Factominer before writing this code
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+data("tea")
+# exploring the tea dataset
+str(tea)
+summary(tea)
+?tea
+dim(tea)
+# moving on to visualization. I choose to visualize six of the variables that I find most interesting.
+keep_columns <- c("age_Q","frequency","How","price","SPC","Tea")
+tea_visu <- select(tea, one_of(keep_columns))
+gather(tea_visu) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+# conducting the Multiple Correspondence Analysis. I continue with my selection of six interesting variables.
+mca <- MCA(tea_visu, graph = FALSE)
+summary(mca)
+plot(mca, invisible=c("ind"), habillage = "quali", graph.type = "classic")
+```
+
+As the distance between variable categories in a MCA provides a measure of their similarity, this gives me some hints as to how to interpret tea drinking habits of different population groups. The pink colour indicates occupation, black indicates age, blue indicates tea brand, red indicates tea drinking frequency, brown indicates kind of tea (green or black or other) and green indicates ways of drinking tea (e.g. with milk or lemon).
+
+Heavily stereotyped, one could suggest that in the down-right corner we find non-workers and seniors who might have an occasional cup of tea of some cheap label every now and then. In the down-left corner, we find young students drinking private label teas, some of whom drink their teas fairly often, even twice a day. In the up-left corner, we find workers and employees having an occasional cup once a week or a regular cup once a day of some unknown or variable brand. In the up-right corner, we find the more posh, middle- and upper-class drinkers who do not necessarily drink tea that regularly (perhaps they prefer coffee), but who are presumably picky about their drink (the branded and upscale tea assortments are found here). Also, the closer we get to the middle and senior workers, the more green tea is consumed.
+
+It's worth noting, that the two dimensions plotted in the MCA factor map do not account for a significant amount of the variation - in fact, less than ten per cent each. That is, there are other variables who jointly explain much more of the variation in tea drinking habits.
